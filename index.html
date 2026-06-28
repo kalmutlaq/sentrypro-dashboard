@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentryPro | War Room</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'JetBrains Mono', monospace; background-color: #0a0a0a; color: #e5e5e5; }
+        .glow-green { text-shadow: 0 0 10px #22c55e; }
+        .glow-red { text-shadow: 0 0 10px #ef4444; }
+        .glass { background: rgba(20, 20, 20, 0.8); backdrop-filter: blur(10px); border: 1px solid #333; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-5xl mx-auto">
+        <header class="flex justify-between items-center mb-12 glass p-6 rounded-2xl">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tighter text-white">SENTRY<span class="text-green-500">PRO</span></h1>
+                <p class="text-xs text-gray-500 uppercase tracking-widest">Whale Execution Engine</p>
+            </div>
+            <div class="text-right">
+                <div id="total-pnl" class="text-2xl font-bold text-green-500 glow-green">$0.00</div>
+                <p class="text-xs text-gray-500 uppercase">Total P&L</p>
+            </div>
+        </header>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div class="glass p-6 rounded-2xl">
+                <p class="text-xs text-gray-500 uppercase mb-2">Wallet Balance</p>
+                <div id="wallet-bal" class="text-xl font-bold text-white">0.00 SOL</div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <p class="text-xs text-gray-500 uppercase mb-2">Total Trades</p>
+                <div id="trade-count" class="text-xl font-bold text-white">0</div>
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <p class="text-xs text-gray-500 uppercase mb-2">Win Rate</p>
+                <div id="win-rate" class="text-xl font-bold text-white">0%</div>
+            </div>
+        </div>
+        <div class="glass rounded-2xl overflow-hidden">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-white uppercase">Execution Feed</h2>
+                <span class="text-xs text-green-500 animate-pulse">● LIVE SCANNING</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="text-xs text-gray-500 uppercase bg-black/50">
+                        <tr>
+                            <th class="px-6 py-4">Asset</th>
+                            <th class="px-6 py-4">Entry</th>
+                            <th class="px-6 py-4">Exit</th>
+                            <th class="px-6 py-4">P&L</th>
+                            <th class="px-6 py-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trade-body" class="divide-y divide-gray-800"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+        async function fetchTrades() {
+            try {
+                const response = await fetch('trades.json');
+                const data = await response.json();
+                renderTrades(data);
+            } catch (e) {
+                document.getElementById('trade-body').innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-600">SentryPro is hunting... No trades executed yet.</td></tr>';
+            }
+        }
+        function renderTrades(trades) {
+            const body = document.getElementById('trade-body');
+            body.innerHTML = '';
+            let wins = 0;
+            trades.forEach(t => {
+                const isWin = t.exitPrice > t.entryPrice;
+                if(isWin) wins++;
+                const mult = (t.exitPrice / t.entryPrice).toFixed(2);
+                body.innerHTML += `<tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4 font-bold text-white">${t.ticker}</td>
+                    <td class="px-6 py-4 text-gray-400">${t.entryPrice}</td>
+                    <td class="px-6 py-4 text-gray-400">${t.exitPrice || 'HOLDING'}</td>
+                    <td class="px-6 py-4 ${isWin ? 'text-green-500 glow-green' : 'text-red-500 glow-red'} font-bold">${isWin ? '+' : ''}${mult}x</td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 rounded text-xs font-bold ${isWin ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}">${isWin ? 'WIN' : 'LOSS'}</span></td>
+                </tr>`;
+            });
+            document.getElementById('trade-count').innerText = trades.length;
+            document.getElementById('win-rate').innerText = trades.length ? Math.round((wins/trades.length)*100) + '%' : '0%';
+        }
+        setInterval(fetchTrades, 10000);
+        fetchTrades();
+    </script>
+</body>
+</html>
